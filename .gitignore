@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+npm-debug.*
+*.jks
+*.keystore
+local.properties
+.env
+android/.gradle/
+android/build/
+android/app/build/
+ios/Pods/
+ios/build/
+*.db

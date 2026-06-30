@@ -1,11 +1,21 @@
-<div align="center">
+# Alpha
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Alpha is a private, local-first household expense and savings application for Android, built with React Native and Expo.
 
-  <h1>Built with AI Studio</h2>
+## Features
+- Local-first architecture with SQLite
+- Append-only posting ledger for financial integrity
+- Household synchronization via Supabase
+- OCR for receipts
+- Offline support
+- Liquid-glass inspired design
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## Getting Started
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+1. Clone the repository
+2. Run `pnpm install`
+3. Setup Supabase according to `docs/SUPABASE_SETUP.md`
+4. Run `pnpm dev` for web or `pnpm android` for Android
 
-</div>
+## Documentation
+See the `docs/` folder for architectural and domain details.
