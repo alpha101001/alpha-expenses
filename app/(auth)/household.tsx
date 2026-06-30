@@ -44,38 +44,19 @@ export default function HouseholdScreen() {
     }
     setCreating(true);
     
-    // In a real app we'd use an RPC to ensure atomic creation of household + member + accounts,
-    // or just rely on RLS and standard inserts.
-    const { data: hhData, error: hhError } = await supabase
-      .from('households')
-      .insert({ name: newHouseholdName, created_by: user!.id })
-      .select('id')
-      .single();
-
-    if (hhError || !hhData) {
-      setCreating(false);
-      Alert.alert('Error', hhError?.message || 'Failed to create household');
-      return;
-    }
-
-    const { error: memberError } = await supabase
-      .from('household_members')
-      .insert({ household_id: hhData.id, user_id: user!.id, role: 'admin' });
+    const { data: bootstrapData, error: rpcError } = await supabase.rpc('create_household', {
+      household_name: newHouseholdName
+    });
 
     setCreating(false);
-    if (memberError) {
-      Alert.alert('Error', memberError.message);
+    
+    if (rpcError || !bootstrapData) {
+      Alert.alert('Error', rpcError?.message || 'Failed to create household');
       return;
     }
 
-    // Insert default accounts
-    await supabase.from('accounts').insert([
-      { household_id: hhData.id, name: 'Cash', type: 'cash', created_by: user!.id },
-      { household_id: hhData.id, name: 'Bank', type: 'bank', created_by: user!.id },
-      { household_id: hhData.id, name: 'bKash', type: 'mobile', created_by: user!.id },
-    ]);
-
-    setHouseholdId(hhData.id);
+    const householdId = bootstrapData.household.id;
+    setHouseholdId(householdId);
     router.replace('/(tabs)');
   };
 

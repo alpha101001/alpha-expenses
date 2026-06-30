@@ -1,32 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { GlassCard } from '../../src/components/GlassCard';
 import { TransactionRepository } from '../../src/db/repositories/TransactionRepository';
+import { AccountRepository, Account } from '../../src/db/repositories/AccountRepository';
 import { useBalanceStore } from '../../src/store';
 import { useAuthStore } from '../../src/store/auth';
+import { parseBdtToPaisa } from '../../src/utils/currency';
 import { router } from 'expo-router';
 
 export default function AddScreen() {
   const [amount, setAmount] = useState('');
   const [item, setItem] = useState('');
   const [notes, setNotes] = useState('');
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const balances = useBalanceStore();
   const { householdId, user } = useAuthStore();
+
+  useEffect(() => {
+    if (householdId) {
+      AccountRepository.getAccounts(householdId).then(data => {
+        setAccounts(data);
+        if (data.length > 0) {
+          setSelectedAccountId(data[0].id);
+        }
+      });
+    }
+  }, [householdId]);
 
   const handleSave = async () => {
     if (!householdId || !user) {
       Alert.alert('Error', 'Missing household context.');
       return;
     }
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid positive amount.');
+    
+    if (!selectedAccountId) {
+      Alert.alert('Error', 'Please select an account.');
       return;
     }
 
-    // Convert to paisa
-    const amountPaisa = Math.round(parsedAmount * 100);
+    let amountPaisa = 0;
+    try {
+      amountPaisa = parseBdtToPaisa(amount);
+      if (amountPaisa <= 0) throw new Error('Amount must be positive');
+    } catch (e) {
+      Alert.alert('Invalid Amount', 'Please enter a valid positive amount.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -41,7 +63,7 @@ export default function AddScreen() {
         creator_id: user.id,
         postings: [
           {
-            account_id: 'cash_1', // Using a default cash account for now
+            account_id: selectedAccountId,
             funding_pool: 'current_month',
             amount: -amountPaisa // Outflow
           }
@@ -76,6 +98,19 @@ export default function AddScreen() {
           onChangeText={setAmount}
           autoFocus
         />
+
+        <Text style={styles.label}>Account</Text>
+        <View style={styles.accountRow}>
+          {accounts.map(acc => (
+            <TouchableOpacity 
+              key={acc.id} 
+              style={[styles.accountChip, selectedAccountId === acc.id && styles.accountChipSelected]}
+              onPress={() => setSelectedAccountId(acc.id)}
+            >
+              <Text style={styles.accountChipText}>{acc.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         <Text style={styles.label}>Item</Text>
         <TextInput 
@@ -162,5 +197,28 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  accountRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  accountChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  accountChipSelected: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#60a5fa',
+  },
+  accountChipText: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '600',
   }
 });

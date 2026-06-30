@@ -39,7 +39,7 @@ export default function LoginScreen() {
     const { error } = await supabase.auth.verifyOtp({
       email,
       token: otp,
-      type: 'magiclink',
+      type: 'email',
     });
     setLoading(false);
 
